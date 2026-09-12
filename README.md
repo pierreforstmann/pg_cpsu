@@ -22,3 +22,13 @@ NOTICE:  pg_cpsu: prepared statement 'prepare fooplan(int) as select * from t wh
 (0 rows)
 ```
 
+```
+pierre=# prepare fp0 as select * from t where x=1;
+PREPARE
+pierre=# execute fp0;
+NOTICE:  pg_cpsu: prepared statement 'prepare fp0 as select * from t where x=1;' not used (parameter number=0)
+ x 
+---
+(0 rows)
+```
+
