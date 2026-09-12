@@ -87,11 +87,13 @@ cpsu_ExecutorStart(QueryDesc *queryDesc, int eflags)
 	ereport(LOG, (errmsg("pg_cpsu: queryId=%ld", queryId)));
 	if (queryDesc->params != NULL) {
 		numParams = queryDesc->params->numParams;
-	        ereport(LOG, (errmsg("pg_cpsu: prepared statement used (parameters number=%ld)", numParams)));  
+	        ereport(INFO, (errmsg("pg_cpsu: prepared statement '%s' used (parameters number=%ld)", 
+                               queryDesc->sourceText, numParams)));  
         }
 	else {
 		numParams = 0;
-	        ereport(LOG, (errmsg("pg_cpsu: prepared statement not used (parameter number=%ld)", numParams)));
+	        ereport(INFO, (errmsg("pg_cpsu: prepared statement '%s' not used (parameter number=%ld)", 
+                                       queryDesc->sourceText, numParams)));
         }
 
 	if (prev_ExecutorStart)
