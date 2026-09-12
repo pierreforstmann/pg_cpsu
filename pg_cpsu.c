@@ -1,11 +1,11 @@
 /*-------------------------------------------------------------------------
  *
- * pg_lps
+ * pg_cpsu
  *  
  * This program is open source, licensed under the PostgreSQL license.
  * For license terms, see the LICENSE file.
  *          
- * Copyright (c) 2023, Pierre Forstmann.
+ * Copyright (c) 2026, Pierre Forstmann.
  *            
  *-------------------------------------------------------------------------
 */
@@ -32,14 +32,13 @@ static ExecutorFinish_hook_type prev_ExecutorFinish = NULL;
 void		_PG_init(void);
 void		_PG_fini(void);
 
-static void pglps_ExecutorStart(QueryDesc *queryDesc, int eflags);
+static void cpsu_ExecutorStart(QueryDesc *queryDesc, int eflags);
 
-static void pglps_ExecutorRun(QueryDesc *queryDesc,
+static void cpsu_ExecutorRun(QueryDesc *queryDesc,
             			 ScanDirection direction,
-				 long unsigned count,
-				 bool execute_once
+				 long unsigned count
 );
-static void pglps_ExecutorFinish(QueryDesc *queryDesc);
+static void cpsu_ExecutorFinish(QueryDesc *queryDesc);
 
 
 
@@ -49,16 +48,16 @@ static void pglps_ExecutorFinish(QueryDesc *queryDesc);
 void
 _PG_init(void)
 {
-	elog(DEBUG5, "pg_lps:_PG_init():entry");
+	elog(DEBUG5, "pg_cpsu:_PG_init():entry");
 
 	prev_ExecutorStart = ExecutorStart_hook;
-	ExecutorStart_hook = pglps_ExecutorStart;
+	ExecutorStart_hook = cpsu_ExecutorStart;
 	prev_ExecutorRun = ExecutorRun_hook;
-	ExecutorRun_hook = pglps_ExecutorRun;
+	ExecutorRun_hook = cpsu_ExecutorRun;
 	prev_ExecutorFinish = ExecutorFinish_hook;
-	ExecutorFinish_hook = pglps_ExecutorFinish;
+	ExecutorFinish_hook = cpsu_ExecutorFinish;
 
-	elog(DEBUG5, "pg_lps:_PG_init():exit");
+	elog(DEBUG5, "pg_cpsu:_PG_init():exit");
 }
 
 
@@ -68,62 +67,61 @@ _PG_init(void)
 void
 _PG_fini(void)
 {
-	elog(DEBUG5, "pg_lps:_PG_fini():entry");
+	elog(DEBUG5, "pg_cpsu:_PG_fini():entry");
 
 	ExecutorStart_hook = prev_ExecutorStart;
 	ExecutorRun_hook = prev_ExecutorRun;
 	ExecutorFinish_hook = prev_ExecutorFinish;
 
-	elog(DEBUG5, "pg_lps:_PG_fini():entry");
+	elog(DEBUG5, "pg_cpsu:_PG_fini():entry");
 }
 
 static void
-pglps_ExecutorStart(QueryDesc *queryDesc, int eflags)
+cpsu_ExecutorStart(QueryDesc *queryDesc, int eflags)
 {
 	uint64	queryId;
 	uint64 numParams;
 
-	elog(DEBUG5, "pg_lps: pglps_ExecutorStart: entry");
+	elog(DEBUG5, "pg_cpsu: pglps_ExecutorStart: entry");
 	queryId = queryDesc->plannedstmt->queryId;
-	ereport(LOG, (errmsg("pg_lps: queryId=%ld", queryId)));
+	ereport(LOG, (errmsg("pg_cpsu: queryId=%ld", queryId)));
 	if (queryDesc->params != NULL)
 		numParams = queryDesc->params->numParams;
 	else
 		numParams = 0;
-	ereport(LOG, (errmsg("pg_lps: numParams=%ld", numParams)));
+	ereport(LOG, (errmsg("pg_cpsu: prepared statement not used (parameter numbers=%ld", numParams)));
 
 	if (prev_ExecutorStart)
 		prev_ExecutorStart(queryDesc, eflags);
 	else
 		standard_ExecutorStart(queryDesc, eflags);
-	elog(DEBUG5, "pg_lps: pglps_ExecutorStart: exit");
+	elog(DEBUG5, "pg_cpsu: cpsu_ExecutorStart: exit");
 }
 
 static void
-pglps_ExecutorRun(QueryDesc *queryDesc,
+cpsu_ExecutorRun(QueryDesc *queryDesc,
 		 ScanDirection direction,
-		 long unsigned count,
-		 bool execute_once)
+		 long unsigned count)
 {
-	elog(DEBUG5, "pg_lps: pglps__ExecutorRun: entry");
+	elog(DEBUG5, "pg_cpsu: cpsu_ExecutorRun: entry");
 
 	if (prev_ExecutorRun)
-		prev_ExecutorRun(queryDesc, direction, count, execute_once);
+		prev_ExecutorRun(queryDesc, direction, count);
 	else
-		standard_ExecutorRun(queryDesc, direction, count, execute_once);
+		standard_ExecutorRun(queryDesc, direction, count);
 
-	elog(DEBUG5, "pg_lps: pglps_ExecutorRun: exit");
+	elog(DEBUG5, "pg_cpsu: cpsu_ExecutorRun: exit");
 }
 
 static void
-pglps_ExecutorFinish(QueryDesc *queryDesc)
+cpsu_ExecutorFinish(QueryDesc *queryDesc)
 {
-	elog(DEBUG5, "pg_lps: pglps_ExecutorFinish: entry");
+	elog(DEBUG5, "pg_cpsu: cpsu_ExecutorFinish: entry");
 
 	if (prev_ExecutorFinish)
 		prev_ExecutorFinish(queryDesc);
 	else
 		standard_ExecutorFinish(queryDesc);
 
-	elog(DEBUG5, "pg_lps: pglgs_ExecutorFinish: exit");
+	elog(DEBUG5, "pg_cpsu: cpsu_ExecutorFinish: exit");
 }
