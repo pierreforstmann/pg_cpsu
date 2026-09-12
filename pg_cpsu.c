@@ -21,6 +21,10 @@
 
 PG_MODULE_MAGIC;
 
+/* 
+ * global variable
+ */
+static	int action_level = INFO;
 
 /* Saved hook values in case of unload */
 static ExecutorStart_hook_type prev_ExecutorStart = NULL;
@@ -48,7 +52,43 @@ static void cpsu_ExecutorFinish(QueryDesc *queryDesc);
 void
 _PG_init(void)
 {
+        char    *action = NULL;
+
 	elog(DEBUG5, "pg_cpsu:_PG_init():entry");
+
+        DefineCustomStringVariable("pg_cpsu.action_level",
+				"setting action",
+				NULL,
+				&action,
+				NULL,
+				PGC_POSTMASTER,
+				0,
+				NULL,
+				NULL,
+				NULL);
+	if (action == NULL) {
+		elog(LOG, "pg_cpsu:_PG_init(): missing parameter pg_cpsu_level.action_level");
+                action_level = INFO;
+                
+	}
+        else {
+                if (strcmp(action, "fatal") == 0)
+			action_level = FATAL;
+		else if (strcmp(action, "error") == 0)
+			action_level = ERROR;
+		else if (strcmp(action, "warning") == 0)
+			action_level = WARNING;
+		else if (strcmp(action, "notice") == 0)
+			action_level = NOTICE;
+		else if (strcmp(action, "log") == 0)
+			action_level = LOG;
+		else if (strcmp(action, "info") == 0)
+			action_level = INFO;
+                else {
+                        elog(LOG, "pg_cpsu:_PG_init(): invalid parameter pg_cpsu_level.action_level");
+                        action_level = INFO;
+                }
+        }
 
 	prev_ExecutorStart = ExecutorStart_hook;
 	ExecutorStart_hook = cpsu_ExecutorStart;
@@ -87,12 +127,14 @@ cpsu_ExecutorStart(QueryDesc *queryDesc, int eflags)
 	ereport(LOG, (errmsg("pg_cpsu: queryId=%ld", queryId)));
 	if (queryDesc->params != NULL) {
 		numParams = queryDesc->params->numParams;
-	        ereport(INFO, (errmsg("pg_cpsu: prepared statement '%s' used (parameters number=%ld)", 
+	        ereport(action_level, 
+                        (errmsg("pg_cpsu: prepared statement '%s' used (parameters number=%ld)", 
                                queryDesc->sourceText, numParams)));  
         }
 	else {
 		numParams = 0;
-	        ereport(INFO, (errmsg("pg_cpsu: prepared statement '%s' not used (parameter number=%ld)", 
+	        ereport(action_level, 
+                        (errmsg("pg_cpsu: prepared statement '%s' not used (parameter number=%ld)", 
                                        queryDesc->sourceText, numParams)));
         }
 
